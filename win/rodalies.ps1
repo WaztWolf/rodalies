@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$HTML_URL = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPO/main/rodalies.html"
+$HTML_URL = "https://raw.githubusercontent.com/WaztWolf/rodalies/main/rodalies.html"
 $TEMP_HTML = Join-Path $env:TEMP "rodalies-chaos.html"
 
 Write-Host ""
