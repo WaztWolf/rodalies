@@ -1,0 +1,566 @@
+```html
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Rodalies CHAOS 💜</title>
+
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+    }
+
+    body {
+        font-family: monospace;
+    }
+
+    #chaos {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 999998;
+    }
+
+    #panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+
+        width: 100vw;
+        height: 55px;
+
+        background: #050505;
+        color: #00ff00;
+
+        font-family: monospace;
+        font-size: clamp(16px, 2vw, 30px);
+        font-weight: bold;
+
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+
+        border-bottom: 3px solid #00ff00;
+
+        z-index: 999999;
+        box-sizing: border-box;
+    }
+
+    #panelText {
+        white-space: nowrap;
+        position: absolute;
+        left: 0;
+    }
+
+    #warning {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+
+        transform: translateX(-50%);
+
+        padding: 8px 16px;
+
+        background: rgba(0,0,0,.75);
+        color: white;
+
+        border: 1px solid rgba(255,255,255,.4);
+        border-radius: 8px;
+
+        font-family: monospace;
+        font-size: 13px;
+
+        z-index: 1000000;
+
+        opacity: .7;
+    }
+
+    .chaosText {
+        position: absolute;
+        font-weight: 900;
+        text-shadow:
+            0 0 5px black,
+            0 0 10px black,
+            0 0 20px black;
+
+        white-space: nowrap;
+
+        user-select: none;
+    }
+
+    .chaosImage {
+        position: absolute;
+        object-fit: contain;
+
+        user-select: none;
+
+        pointer-events: none;
+
+        filter:
+            saturate(2)
+            contrast(1.2);
+    }
+
+    .flash {
+        position: fixed;
+        inset: 0;
+
+        background: white;
+
+        pointer-events: none;
+
+        z-index: 999997;
+
+        animation: flash .12s linear forwards;
+    }
+
+    @keyframes flash {
+        from {
+            opacity: .8;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="chaos"></div>
+
+<div id="panel">
+    <div id="panelText"></div>
+</div>
+
+<div id="warning">
+    RODALIES CHAOS MODE 🚆💀
+</div>
+
+<script>
+
+/* =========================================================
+   RODALIES CHAOS
+   Versió HTML standalone
+========================================================= */
+
+
+/* =========================
+   FRASES
+========================= */
+
+const FRASES = [
+    "Servei Rodalies de Catalunya 💜",
+    "Retard indefinit ⚠️",
+    "Incidència tècnica 🚧",
+    "Disculpin les molèsties 🙃",
+    "Circulació interrompuda 🛑",
+    "El tren no passarà 🫠",
+    "Servei mínim 😭",
+    "Caos ferroviari 💀",
+    "Tren suprimit ❌🚆",
+    "Retard acumulat ⚠️",
+    "Incidència a la línia 🚧",
+    "Esperin indicacions 📢",
+    "Gràcies per la seva paciència 🙂",
+    "Servei afectat 💀",
+    "Pròxim tren: probablement",
+    "ATENCIÓ PASSATGERS ⚠️",
+    "NO HI HA TREN 😭",
+    "Rodalies moment™",
+    "Renfe diu que tot va bé 👍",
+    "Circulació amb alteracions",
+    "El tren està arribant... o no",
+    "AVÍS IMPORTANT 📢",
+    "CANVI DE VIA 🚨",
+    "TREN CANCEL·LAT 💀"
+];
+
+
+/* =========================
+   PARADAS
+========================= */
+
+const PARADAS = [
+    "Mataró",
+    "Arenys de Mar",
+    "Calella",
+    "Blanes",
+    "Maçanet-Massanes",
+    "Badalona",
+    "Sant Adrià de Besòs",
+    "Barcelona Sants",
+    "Barcelona Passeig de Gràcia",
+    "El Prat de Llobregat",
+    "Aeroport",
+    "Sitges",
+    "Vilanova i la Geltrú",
+    "Granollers Centre",
+    "Mollet-Sant Fost",
+    "Vic",
+    "Ripoll",
+    "Puigcerdà"
+];
+
+
+/* =========================
+   IMÁGENES
+========================= */
+
+const imagenes = [
+
+    "https://upload.wikimedia.org/wikipedia/commons/7/79/Rodalies_tren_malgrat_de_mar_RENFE_Class_447.JPG",
+
+    "https://upload.wikimedia.org/wikipedia/commons/0/03/Rodalies_CAT_2010-06-09_21-46-36.jpg",
+
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Rodalies_de_Catalunya_logo.svg/512px-Rodalies_de_Catalunya_logo.svg.png"
+
+];
+
+
+/* =========================
+   UTILIDADES
+========================= */
+
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+
+function randomItem(array) {
+    return array[Math.floor(Math.random() * array.length)];
+}
+
+
+function colorRandom() {
+
+    return `hsl(
+        ${Math.floor(Math.random() * 360)},
+        100%,
+        50%
+    )`;
+}
+
+
+/* =========================
+   ELEMENTOS
+========================= */
+
+const chaos = document.getElementById("chaos");
+const panelText = document.getElementById("panelText");
+
+
+/* =========================
+   TEXTO CAOS
+========================= */
+
+function crearTexto() {
+
+    const span = document.createElement("span");
+
+    span.className = "chaosText";
+
+    span.textContent = randomItem(FRASES);
+
+    const size = random(18, 85);
+
+    Object.assign(span.style, {
+
+        left:
+            random(
+                -100,
+                Math.max(window.innerWidth - 100, 100)
+            ) + "px",
+
+        top:
+            random(
+                60,
+                Math.max(window.innerHeight - 80, 100)
+            ) + "px",
+
+        color: colorRandom(),
+
+        fontSize: size + "px",
+
+        transform:
+            `rotate(${random(-45,45)}deg)
+             scale(${random(.5,2)})`
+
+    });
+
+    chaos.appendChild(span);
+
+    setTimeout(() => {
+
+        span.style.transition =
+            "opacity .5s, transform .5s";
+
+        span.style.opacity = "0";
+
+        setTimeout(() => span.remove(), 600);
+
+    }, random(1800,5000));
+}
+
+
+/* =========================
+   IMAGEN CAOS
+========================= */
+
+function crearImagen() {
+
+    const img = document.createElement("img");
+
+    img.className = "chaosImage";
+
+    img.src = randomItem(imagenes);
+
+    img.alt = "Rodalies";
+
+    Object.assign(img.style, {
+
+        left:
+            random(
+                -100,
+                Math.max(window.innerWidth - 100, 100)
+            ) + "px",
+
+        top:
+            random(
+                60,
+                Math.max(window.innerHeight - 150, 100)
+            ) + "px",
+
+        width: random(80,400) + "px",
+
+        transform:
+            `rotate(${random(-30,30)}deg)
+             scale(${random(.5,1.5)})`,
+
+        filter:
+            `hue-rotate(${random(0,360)}deg)
+             saturate(${random(1.5,3)})`
+    });
+
+    chaos.appendChild(img);
+
+    setTimeout(() => {
+
+        img.style.transition = "opacity .7s";
+
+        img.style.opacity = "0";
+
+        setTimeout(() => img.remove(), 800);
+
+    }, random(3000,7000));
+}
+
+
+/* =========================
+   PANEL
+========================= */
+
+let paradaIndex = 0;
+
+
+function iniciarPanel() {
+
+    function siguiente() {
+
+        const parada =
+            PARADAS[paradaIndex % PARADAS.length];
+
+        const mensajes = [
+
+            `Próxima Parada: ${parada} ⚠️`,
+
+            `PROPERA PARADA: ${parada} 🚆`,
+
+            `ATENCIÓ: ${parada} 🚨`,
+
+            `DESTÍ: ${parada} 💜`
+
+        ];
+
+        panelText.textContent =
+            randomItem(mensajes);
+
+        panelText.style.transform =
+            "translateX(-100%)";
+
+        panelText.animate(
+
+            [
+                {
+                    transform: "translateX(-100%)"
+                },
+
+                {
+                    transform: "translateX(120vw)"
+                }
+
+            ],
+
+            {
+                duration: random(4500,7000),
+                easing: "linear"
+            }
+
+        ).onfinish = siguiente;
+
+        paradaIndex++;
+    }
+
+    siguiente();
+}
+
+
+/* =========================
+   FLASH ALEATORIO
+========================= */
+
+function flashRandom() {
+
+    const flash =
+        document.createElement("div");
+
+    flash.className = "flash";
+
+    document.body.appendChild(flash);
+
+    setTimeout(() => {
+        flash.remove();
+    }, 150);
+}
+
+
+/* =========================
+   EFECTO TEMBLOR
+========================= */
+
+function shakeScreen() {
+
+    document.body.animate(
+
+        [
+            {
+                transform: "translate(0,0)"
+            },
+
+            {
+                transform:
+                    `translate(
+                        ${random(-8,8)}px,
+                        ${random(-8,8)}px
+                    )`
+            },
+
+            {
+                transform: "translate(0,0)"
+            }
+
+        ],
+
+        {
+            duration: 180,
+            iterations: 2
+        }
+
+    );
+}
+
+
+/* =========================
+   PANTALLA COMPLETA
+========================= */
+
+async function fullscreen() {
+
+    try {
+
+        if (!document.fullscreenElement) {
+
+            await document.documentElement
+                .requestFullscreen();
+
+        }
+
+    } catch (error) {
+
+        console.log(
+            "Fullscreen no disponible:",
+            error
+        );
+
+    }
+}
+
+
+/* =========================
+   INICIO
+========================= */
+
+function iniciarTodo() {
+
+    iniciarPanel();
+
+    setInterval(
+        crearTexto,
+        100
+    );
+
+    setInterval(
+        crearImagen,
+        600
+    );
+
+    setInterval(
+        () => {
+
+            if (Math.random() < .25) {
+                flashRandom();
+            }
+
+            if (Math.random() < .35) {
+                shakeScreen();
+            }
+
+        },
+        2500
+    );
+
+}
+
+
+/* =========================
+   INTERACCIÓN
+========================= */
+
+document.addEventListener(
+    "click",
+    fullscreen
+);
+
+
+/* =========================
+   ARRANCAR
+========================= */
+
+iniciarTodo();
+
+</script>
+
+</body>
+</html>
