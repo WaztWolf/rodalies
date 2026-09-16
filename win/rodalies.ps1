@@ -5,103 +5,100 @@ $TEMP_HTML = Join-Path $env:TEMP "rodalies-chaos.html"
 
 Write-Host ""
 Write-Host "==============================================" -ForegroundColor Magenta
-Write-Host "        🚆 RODALIES CHAOS 🚆" -ForegroundColor Cyan
+Write-Host "           RODALIES CHAOS MODE" -ForegroundColor Cyan
 Write-Host "==============================================" -ForegroundColor Magenta
 Write-Host ""
 
+# Descargar HTML
 Write-Host "[+] Descargando Rodalies Chaos..." -ForegroundColor Yellow
 
-try {
-    Invoke-WebRequest `
-        -Uri $HTML_URL `
-        -OutFile $TEMP_HTML `
-        -UseBasicParsing
-}
-catch {
-    Write-Host "[!] No se pudo descargar el HTML." -ForegroundColor Red
-    Write-Host $_.Exception.Message -ForegroundColor Red
-    exit 1
-}
+Invoke-WebRequest `
+    -Uri $HTML_URL `
+    -OutFile $TEMP_HTML `
+    -UseBasicParsing
 
 Write-Host "[+] HTML descargado." -ForegroundColor Green
 
-$browsers = @(
-    @{
-        Name = "Microsoft Edge"
-        Paths = @(
-            "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe",
-            "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
-            "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe"
-        )
-    },
-    @{
-        Name = "Google Chrome"
-        Paths = @(
-            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-            "$env:ProgramFiles(x86)\Google\Chrome\Application\chrome.exe",
-            "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-        )
-    }
+$browser = $null
+
+$edgePaths = @(
+    "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe",
+    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+    "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe"
 )
 
-$browser = $null
-$browserName = $null
-
-foreach ($candidate in $browsers) {
-    foreach ($path in $candidate.Paths) {
-        if (Test-Path $path) {
-            $browser = $path
-            $browserName = $candidate.Name
-            break
-        }
-    }
-
-    if ($browser) {
+foreach ($path in $edgePaths) {
+    if (Test-Path $path) {
+        $browser = $path
         break
     }
 }
 
-# También probar PATH
 if (-not $browser) {
+
+    $chromePaths = @(
+        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+        "$env:ProgramFiles(x86)\Google\Chrome\Application\chrome.exe",
+        "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+    )
+
+    foreach ($path in $chromePaths) {
+        if (Test-Path $path) {
+            $browser = $path
+            break
+        }
+    }
+}
+
+if (-not $browser) {
+
     $edge = Get-Command msedge.exe -ErrorAction SilentlyContinue
 
     if ($edge) {
         $browser = $edge.Source
-        $browserName = "Microsoft Edge"
     }
 }
 
 if (-not $browser) {
+
     $chrome = Get-Command chrome.exe -ErrorAction SilentlyContinue
 
     if ($chrome) {
         $browser = $chrome.Source
-        $browserName = "Google Chrome"
     }
 }
 
 if (-not $browser) {
-    Write-Host "[!] No encuentro Edge ni Chrome." -ForegroundColor Red
+
     Write-Host ""
-    Write-Host "Abriendo el HTML directamente..." -ForegroundColor Yellow
+    Write-Host "[!] No se encontró Microsoft Edge ni Google Chrome." -ForegroundColor Red
+    Write-Host "[+] Abriendo el archivo normalmente..." -ForegroundColor Yellow
 
     Start-Process $TEMP_HTML
+
     exit 0
 }
 
-Write-Host "[+] Navegador encontrado: $browserName" -ForegroundColor Green
-Write-Host "[+] Lanzando Rodalies Chaos..." -ForegroundColor Cyan
-Write-Host ""
+Write-Host "[+] Navegador encontrado:" -ForegroundColor Green
+Write-Host "    $browser" -ForegroundColor DarkGray
 
-$args = @(
-    "--app=`"$TEMP_HTML`"",
-    "--start-maximized",
-    "--disable-features=Translate"
-)
+Write-Host ""
+Write-Host "[+] ACTIVANDO RODALIES CHAOS..." -ForegroundColor Cyan
+Write-Host ""
 
 Start-Process `
     -FilePath $browser `
-    -ArgumentList $args
+    -ArgumentList @(
+        "--kiosk",
+        "--start-maximized",
+        "--disable-infobars",
+        "--disable-features=Translate",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "file:///$TEMP_HTML"
+    )
 
-Write-Host "🚆 CAOS FERROVIARI ACTIVAT." -ForegroundColor Magenta
+Write-Host "==============================================" -ForegroundColor Magenta
+Write-Host "       🚆 CAOS FERROVIARI ACTIVAT 🚆" -ForegroundColor Cyan
+Write-Host "==============================================" -ForegroundColor Magenta
 Write-Host ""
