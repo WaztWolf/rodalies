@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RODALIES CHAOS 2.0 — Paròdia</title>
+<title>RODALIES CHAOS 3.0 — Hemeroteca del desastre (Paròdia)</title>
 <style>
 :root { color-scheme: dark; --ink:#f9f8f2; --orange:#ff782d; --purple:#a65aff; --acid:#b2ff27; }
 * { box-sizing: border-box; }
@@ -36,11 +36,27 @@ body { background:radial-gradient(ellipse at 50% 60%,#27233d 0%,#080811 65%); }
 .ticket small {display:block;font-size:11px;opacity:.65;margin-bottom:7px;}
 .giant{font-size:clamp(48px,13vw,180px);font-weight:1000;letter-spacing:-.08em;white-space:nowrap;color:#fff;text-shadow:6px 6px #ff5729,12px 12px #000;transform:translate(-50%,-50%) rotate(-10deg);z-index:37;}
 #pulse {position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:91;}
+#lineboard { position:absolute;left:11px;right:175px;top:71px;z-index:82;display:flex;flex-wrap:wrap;gap:5px;max-height:116px;overflow:auto;pointer-events:auto;scrollbar-width:thin; }
+.lineChip { appearance:none;border:2px solid #ffffff6a;background:#121020d9;color:#fff;border-radius:5px;font:1000 12px ui-monospace,monospace;min-width:46px;min-height:27px;cursor:pointer;box-shadow:2px 2px #000a;transition:transform .16s,background .16s; }
+.lineChip:hover,.lineChip:focus-visible{background:#f67a31;color:#150c16;transform:translateY(-2px);outline:2px solid #fff;}
+.lineChip.active {background:#b2ff27;border-color:#fff;color:#151317;}
+#lineDetail {position:absolute;left:11px;top:197px;max-width:min(690px,80vw);z-index:19;pointer-events:none;background:#111018cb;border-left:5px solid #f78433;padding:7px 12px;font-size:clamp(11px,1.3vw,16px);font-weight:900;text-shadow:2px 2px #000;}
+.photo {border-width:10px;border-bottom-width:36px;border-radius:4px;box-shadow:14px 19px 0 #000b,0 0 45px #000b;z-index:27;}
+.photo img {object-position:center;}
+.photo .imageCaption {bottom:-30px;font-size:clamp(11px,1vw,16px);text-align:left;padding-left:5px;max-width:65%;}
+.photo .sourceLink {position:absolute;bottom:-30px;right:2px;color:#383039;background:#e2def4;font-size:10px;font-weight:900;padding:3px 4px;pointer-events:auto;text-decoration:none;border-radius:3px;}
+.photo .sourceLink:hover{text-decoration:underline;background:#b2ff27;}
+.history {position:absolute;z-index:54;max-width:min(540px,90vw);background:#f8ede3;color:#1b1220;border:6px solid #ff8b37;box-shadow:12px 14px #000b;padding:14px 17px;pointer-events:auto;animation:arrival .35s both,noticetilt 2s ease-in-out infinite alternate;}
+.history strong{display:block;font-size:clamp(15px,2vw,22px);line-height:1.1;}
+.history small{display:block;font-size:12px;margin-bottom:6px;font-weight:1000;color:#7f3056;}
+.history p{font-weight:800;font-size:clamp(13px,1.55vw,18px);margin:9px 0;}
+.history a{color:#5c2c89;font-weight:1000;font-size:12px;}
 #footerMark {position:fixed;bottom:86px;right:15px;z-index:39;color:#fff9;font:800 11px ui-monospace,monospace;background:#09080bc9;padding:6px 9px;}
 @keyframes arrival {from{opacity:0;scale:.2}to{opacity:1;scale:1}}
 @keyframes wobble {from{translate:-5px 0;rotate:-7deg}to{translate:7px -10px;rotate:7deg}}
 @keyframes photoDance{from{translate:-7px 3px;rotate:-6deg}to{translate:8px -7px;rotate:6deg}}
 @keyframes noticetilt{from{rotate:-3deg}to{rotate:3deg}}
+@media (max-width:820px){#lineboard{right:10px;top:68px;max-height:95px}#clock{top:174px;right:8px;font-size:13px}#lineDetail{top:170px;max-width:70vw}#center{top:54%}.photo .imageCaption{max-width:60%}}
 @media (max-width:600px){#controls{display:none} #ribbonTag{font-size:12px;padding:20px 8px} #info{min-height:66px} #center .plate{font-size:11px}}
 @media (prefers-reduced-motion:reduce){.particle,.photo,.notice{animation:arrival .3s both}#pulse{display:none}}
 </style>
@@ -48,11 +64,13 @@ body { background:radial-gradient(ellipse at 50% 60%,#27233d 0%,#080811 65%); }
 <body>
 <div id="stage">
  <div id="grid"></div>
- <div id="center"><div class="eyebrow">SERVEI ABSOLUTAMENT FICTICI</div><h1>RODALIES<br>CHAOS</h1><h2>2.0 — RETARD INDEFINIT</h2><div class="plate">PROPER TREN: ERROR 404</div></div>
+ <div id="center"><div class="eyebrow">PARÒDIA · HEMEROTECA FERROVIÀRIA</div><h1>RODALIES<br>CHAOS</h1><h2>3.0 — RETARD INDEFINIT</h2><div class="plate">PROPER TREN: ERROR 404</div></div>
+ <div id="lineboard" aria-label="Línies de Rodalies (selector de paròdia)"></div>
+ <div id="lineDetail">TOUTES LES LÍNIES · 20 RUTES · HISTÒRIES REALS + MEMS INVENTATS</div>
  <div id="clock">00:00:00</div>
  <div id="ribbon"><div id="ribbonTag">🚆 RODALIES?</div><div id="ticker">NO HI HA TRENS · PERDONIN LES MOLÈSTIES · PROPER TREN: POT SER DEMÀ ·</div></div>
  <div id="info"><div class="status">R?? <span id="delay">+999'</span></div><div id="stationText">Propera parada: Sants (potser)</div><div id="controls">ALT+F4: tancar<br>F: pantalla completa · ESPAI: més caos</div></div>
- <div id="footerMark">PARÒDIA · CAP INFORMACIÓ DE SERVEI REAL</div>
+ <div id="footerMark">PARÒDIA · HISTÒRIA, NO ALERTES EN DIRECTE · FOTOS: WIKIMEDIA COMMONS</div>
 </div>
 <div id="pulse"></div>
 <script>
@@ -73,6 +91,35 @@ const STATIONS = [
  'Ripoll','Ribes de Freser','Planoles','La Molina','Puigcerdà',
  'Manresa','La Garriga','Canovelles','Mollet Sant Fost',
  'Palafolls (manifestació del desig)','La Luna','La Sagrera del multivers'
+];
+// Barcelona, regionals, Girona, Tarragona and Lleida. R12 is marked as historic/legacy.
+const LINES = [
+ ['R1','Molins de Rei → Maçanet-Massanes · per Mataró'], ['R2','Castelldefels → Granollers Centre'],
+ ['R2N','Aeroport → Maçanet-Massanes'], ['R2S','Estació de França → Sant Vicenç de Calders'],
+ ['R3','L’Hospitalet → Puigcerdà / La Tor de Querol'],['R4','Sant Vicenç de Calders → Manresa'],
+ ['R7','Fabra i Puig → Cerdanyola Universitat'],['R8','Martorell → Granollers Centre'],
+ ['R11','Barcelona → Girona → Portbou'], ['R12','Barcelona → Lleida via Manresa · traçat històric'],
+ ['R13','Barcelona → Lleida via Valls'], ['R14','Barcelona → Lleida via Reus'],
+ ['R15','Barcelona → Riba-roja d’Ebre'], ['R16','Barcelona → Tortosa / Ulldecona'],
+ ['R17','Barcelona → Salou-Port Aventura'],['RG1','Mataró / Blanes → Figueres / Portbou'],
+ ['RT1','Tarragona → Reus → La Plana-Picamoixons'],['RT2','L’Arboç → Salou-Port Aventura'],
+ ['RL3','Lleida → Cervera'], ['RL4','Lleida → Manresa']
+];
+const HISTORIC = [
+ {line:'R1',date:'GENER 2020',title:'TEMPORAL GLÒRIA I EL PONT DE LA TORDERA',fact:'El temporal Glòria va destruir el pont ferroviari entre Malgrat de Mar i Blanes. Va caldre transport alternatiu durant mesos.',url:'https://commons.wikimedia.org/wiki/Category:Storm_Gloria'},
+ {line:'R3',date:'12 MAIG 2024',title:'ROBO DE COURE A MONTCADA',fact:'Una sostracció de cablejat va causar una sobretensió a Montcada Bifurcació i greus afectacions a Rodalies.',url:'https://rodalies.gencat.cat/ca/detalls/article/Incidencia-12-de-maig'},
+ {line:'R4',date:'12 MAIG 2024',title:'EL DIA DELS TRENS DESAPAREGUTS',fact:'El robatori de cable a Montcada va afectar les R3, R4, R7 i R12, en plena jornada electoral.',url:'https://www.rtve.es/catalunya/noticies/20240512/robatori-coure-a-montcada-provoca-caos-a-xarxa-ferroviaria/16099807.shtml'},
+ {line:'R2S',date:'7 MARÇ 2025',title:'900 PERSONES EVACUADES',fact:'Una avaria a la catenària a Bellvitge-Gornal va obligar a evacuar 900 passatgers de l’R2 Sud.',url:'https://www.rtve.es/noticias/20250307/averia-trenes-rodalies-provoca-importantes-retrasos-desalojo-900-pasajeros/16480933.shtml'},
+ {line:'R3',date:'MARÇ 2025',title:'UNA ROCA ENTRE RIBES I PLANOLES',fact:'Un tren R3 va topar amb una roca caiguda a la via entre Ribes de Freser i Planoles i es va interrompre el servei.',url:'https://www.rtve.es/noticias/20260121/historico-incidencias-averias-rodalies-barcelona/16902904.shtml'},
+ {line:'R11',date:'GENER 2026',title:'BUS ENTRE FIGUERES I PORTBOU',fact:'El servei R11 va tenir un pla de transport alternatiu per carretera entre Figueres i Portbou per obres.',url:'https://rodalies.gencat.cat/es/detalls/article/01_24_PAT_R11'},
+ {line:'R15',date:'GENER 2026',title:'R15: TRANSBORDAMENT PER CARRETERA',fact:'El 24 de gener de 2026 es va anunciar transport alternatiu entre Reus i Riba-roja d’Ebre.',url:'https://rodalies.gencat.cat/ca/detalls/article/01_24_Estat_servei'},
+ {line:'RL4',date:'GENER 2026',title:'DE CERVERA A MANRESA, EN BUS',fact:'El 24 de gener de 2026 la RL4 combinava tren fins a Cervera amb servei alternatiu per carretera fins a Manresa.',url:'https://rodalies.gencat.cat/ca/detalls/article/01_24_Estat_servei'},
+ {line:'R3',date:'JULIOL 2026',title:'MÉS SERVEIS ALTERNATIUS A L’R3',fact:'Rodalies va anunciar modificacions del servei R3 entre L’Hospitalet i Puigcerdà el juliol de 2026.',url:'https://rodalies.gencat.cat/ca/alteracions_del_servei/'},
+ {line:'R13',date:'AGOST 2026',title:'ROBATORI DE CABLE: R13 I R14',fact:'L’agost de 2026 es va comunicar servei alternatiu entre Lleida i la Plana de Picamoixons per robatori de cable.',url:'https://rodalies.gencat.cat/ca/alteracions_del_servei/'},
+ {line:'R7',date:'AGOST 2026',title:'CANVIS DE SERVEI A L’R7',fact:'Rodalies va publicar modificacions del servei de l’R7 entre Montcada Bifurcació i Cerdanyola Universitat.',url:'https://rodalies.gencat.cat/ca/alteracions_del_servei/'},
+ {line:'R1',date:'SETEMBRE 2026',title:'CANVIS DE SERVEI A CALELLA',fact:'El setembre de 2026 es van comunicar modificacions del servei als trens R1 amb origen o destinació Calella.',url:'https://rodalies.gencat.cat/ca/alteracions_del_servei/'},
+ {line:'R2S',date:'OCTUBRE 2026',title:'PLUGES: R2 SUD SUSPESA',fact:'Rodalies va anunciar la suspensió temporal de l’R2 Sud per avisos de pluges intenses el 18 d’octubre de 2026.',url:'https://rodalies.gencat.cat/es/inici'},
+ {line:'R4',date:'21 OCTUBRE 2026',title:'INCIDÈNCIA D’INFRAESTRUCTURA A L’R4',fact:'L’avís del 21 d’octubre parlava de retards al tram Sant Sadurní d’Anoia – Martorell Central.',url:'https://rodalies.gencat.cat/ca/alteracions_del_servei'}
 ];
 const PHRASES = [
  'TREN SUPRIMIT', 'RETARD INDEFINIT', 'INCIDÈNCIA TÈCNICA',
@@ -106,16 +153,106 @@ const ALERTS = [
  'Rodalies.exe ha deixat de respondre'
 ];
 // Photos are optional; if a host denies hotlinking, built-in train illustrations take over.
-const PHOTO_URLS = [
- 'https://upload.wikimedia.org/wikipedia/commons/7/79/Rodalies_tren_malgrat_de_mar_RENFE_Class_447.JPG',
- 'https://upload.wikimedia.org/wikipedia/commons/0/03/Rodalies_CAT_2010-06-09_21-46-36.jpg',
- 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Rodalies_de_Catalunya_logo.svg/512px-Rodalies_de_Catalunya_logo.svg.png',
- 'https://www.nic.funet.fi/index/railways/Spain/cercanias/es-rodalies-447-barcelonasants-081118-full.jpg',
- 'https://www.trenvista.net/wp-content/uploads/2021/08/Unidad-447-de-Renfe-con-los-colores-de-Rodalies-de-Catalunya.jpg',
- 'https://www.viaempresa.cat/uploads/s1/26/49/21/24/rodalies-catalunya.jpeg',
- 'https://www.newtral.es/wp-content/uploads/2023/08/2220272041-FF-TREN-RODALIES-shutterstock-scaled.jpg',
- 'https://www.rodalies.gencat.cat/web/.content/01_Actualitat/2026/05_08_Abonaments_2026/BANNER_CAST.png_223078711.png'
-];
+// Real photographs hosted on Wikimedia Commons. Thumbnail requests keep bandwidth sane.
+// Click the photo's SOURCE link for author and licensing information.
+const PHOTO_FILES = [
+ [
+  "Barcelona-EF - 2014-01-31 4 - JTCurses.jpg",
+  "451 I CIVIA A ESTACIÓ DE FRANÇA"
+ ],
+ [
+  "J21 113 Bf Massanes, 447 045.jpg",
+  "447-045 A MAÇANET-MASSANES"
+ ],
+ [
+  "J21 089 Bf San Pol de Mar, 447 157.jpg",
+  "447 A SANT POL DE MAR"
+ ],
+ [
+  "Renfe train at Malgrat de Mar (26550869421).jpg",
+  "RODALIES A MALGRAT DE MAR"
+ ],
+ [
+  "Rodalies tren malgrat de mar RENFE Class 447.JPG",
+  "447 A MALGRAT DE MAR"
+ ],
+ [
+  "Renfe Rodalies Catalunya Serie 465 Civia (249M + 260M) - Estació de França (11666115564).jpg",
+  "CIVIA A ESTACIÓ DE FRANÇA"
+ ],
+ [
+  "Barcelona Rodalies 352M train 01.jpg",
+  "TREN DE RODALIES A BARCELONA"
+ ],
+ [
+  "Barcelona Rodalies Renfe 450-451 003C 01.jpg",
+  "DOBLE PIS · SÈRIE 450-451"
+ ],
+ [
+  "Renfe 465 766 Sant Cugat del Vallès.jpg",
+  "CIVIA A SANT CUGAT"
+ ],
+ [
+  "Estació Blanes 2019.jpg",
+  "ESTACIÓ DE BLANES"
+ ],
+ [
+  "Estació de Calella 01.jpg",
+  "ESTACIÓ DE CALELLA"
+ ],
+ [
+  "Estació d'Arenys de Mar 05 2018.jpg",
+  "ESTACIÓ D’ARENYS DE MAR"
+ ],
+ [
+  "Rodalies r4 sants.jpg",
+  "RODALIES R4 A SANTS"
+ ],
+ [
+  "J23 592 Bf Mataró, 447 312.jpg",
+  "447 A MATARÓ"
+ ],
+ [
+  "Renfe 447 Lavern (5598892922).jpg",
+  "447 A LAVERN"
+ ],
+ [
+  "J29 597 Bf Figueras, 447 345.jpg",
+  "447 A FIGUERES"
+ ],
+ [
+  "Renfe 447.251 Castellbell i el Vilar (13946346484).jpg",
+  "447 A CASTELLBELL I EL VILAR"
+ ],
+ [
+  "Renfe 449 Granollers-Centre (6291189836).jpg",
+  "449 A GRANOLLERS CENTRE"
+ ],
+ [
+  "Pont ferroviari de La Tordera Gener 2020.jpg",
+  "PONT FERROVIARI DE LA TORDERA · 2020"
+ ],
+ [
+  "J21 123 Bf Cerbère, 447 346.jpg",
+  "447 A CERVERA DE LA MARENDA"
+ ],
+ [
+  "Barcelona Rodalies 357M 01.jpg",
+  "RODALIES A BARCELONA"
+ ],
+ [
+  "Granollers Centre station 2018.jpg",
+  "ESTACIÓ DE GRANOLLERS CENTRE"
+ ],
+ [
+  "Renfe Rodalies 452 en proves.jpg",
+  "SÈRIE 452 EN PROVES"
+ ]
+].map(([name,caption])=>({
+ name, caption,
+ src:'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(name)+'?width=1080',
+ page:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(name.replace(/ /g,'_'))
+}));
 const stage = document.getElementById('stage');
 const ticker = document.getElementById('ticker');
 const stationText = document.getElementById('stationText');
@@ -123,6 +260,10 @@ const clock = document.getElementById('clock');
 const delay = document.getElementById('delay');
 const pulse = document.getElementById('pulse');
 const loadedPhotos = [];
+const lineboard = document.getElementById('lineboard');
+const lineDetail = document.getElementById('lineDetail');
+let activeLine=0;
+
 let boost = false, stationIndex = 0, lastTick = performance.now();
 let tickerX = window.innerWidth;
 const $random = (a,b)=>Math.random()*(b-a)+a;
@@ -137,8 +278,10 @@ function addTemporary(el,group,max,lifespan){
  window.setTimeout(()=>{if(el.isConnected){el.style.transition='opacity .5s,scale .5s';el.style.opacity='0';el.style.scale='.3';window.setTimeout(()=>el.remove(),550)}},lifespan);
 }
 function stamp(el){
- el.style.left=`${$random(2,Math.max(3,innerWidth-230))}px`;
- el.style.top=`${$random(82,Math.max(83,innerHeight-175))}px`;
+ const w = parseFloat(el.style.width) || (el.className==='history'?Math.min(540,innerWidth*.8):360);
+ const h = parseFloat(el.style.height) || 135;
+ el.style.left=`${$random(8,Math.max(9,innerWidth-w-25))}px`;
+ el.style.top=`${$random(Math.min(230,Math.max(100,innerHeight*.28)),Math.max(235,innerHeight-h-92))}px`;
 }
 function createText(){
  const el=document.createElement('div');el.className='particle';
@@ -165,30 +308,80 @@ function trainSvg(index){
 }
 const trainArt=Array.from({length:12},(_,i)=>trainSvg(i));
 function preloadPhotos(){
- PHOTO_URLS.forEach(url=>{
-  const img=new Image();
-  img.onload=()=>loadedPhotos.push(url);
-  img.onerror=()=>{};
-  img.src=url;
+ // Stagger downloads; Commons photos are real, SVG is a guaranteed offline fallback.
+ PHOTO_FILES.forEach((photo,i)=>{
+  setTimeout(()=>{
+   const img=new Image();
+   img.decoding='async';
+   img.onload=()=>loadedPhotos.push(photo);
+   img.onerror=()=>{};
+   img.src=photo.src;
+  },i*270);
  });
 }
 function createPhoto(){
  const frame=document.createElement('div');frame.className='photo';
- const width=$random(130,boost?440:330);
- frame.style.width=`${width}px`;frame.style.height=`${width*$random(.57,.82)}px`;
+ const maxWidth=Math.max(200,innerWidth-35);
+ const giantPhoto=Math.random()<.22;
+ const w=bound(giantPhoto?innerWidth*$random(.42,.65):innerWidth*$random(.24,.46),Math.min(220,maxWidth),Math.min(820,maxWidth));
+ frame.style.width=`${w}px`;frame.style.height=`${Math.min(innerHeight*.62,w*$random(.58,.82))}px`;
  const img=document.createElement('img');
- img.alt='Tren o mem ferroviari';
- const usePhoto=loadedPhotos.length>0&&Math.random()<.6;
- img.src=usePhoto?pick(loadedPhotos):pick(trainArt);
+ img.alt='Fotografia de tren o estació de Rodalies';
+ const useReal=loadedPhotos.length>0 && Math.random()<.92;
+ const photo=useReal?pick(loadedPhotos):null;
+ img.src=photo?photo.src:pick(trainArt);
  img.onerror=()=>{img.onerror=null;img.src=pick(trainArt)};
- const cap=document.createElement('div');cap.className='imageCaption';cap.textContent=pick(['QUE HI HA DE LA R1?', 'AVISTAMENT DE TREN', 'LA MÀQUINA DEL TEMPS', 'SITUACIÓ CONTROLADA (?)','RENFE MOMENT']);
- frame.append(img,cap);stamp(frame);
- addTemporary(frame,'photos',boost?19:13,$random(3300,6500));
+ const cap=document.createElement('div');cap.className='imageCaption';
+ cap.textContent=photo?photo.caption:pick(['AVISTAMENT DE TREN','CIVIA DEL MULTIVERS','RODALIES.EXE']);
+ frame.append(img,cap);
+ if(photo){
+  const source=document.createElement('a');source.className='sourceLink';
+  source.textContent='FOTO REAL ↗';source.href=photo.page;source.target='_blank';
+  source.rel='noopener noreferrer';source.title='Autoria, llicència i fitxa original a Wikimedia Commons';
+  frame.appendChild(source);
+ }
+ stamp(frame);
+ addTemporary(frame,'photos',boost?21:15,$random(boost?3600:4700,boost?8000:10000));
+}
+function createHistory(forLine){
+ const options=forLine?HISTORIC.filter(e=>e.line===forLine):HISTORIC;
+ const event=pick(options.length?options:HISTORIC);
+ const card=document.createElement('div');card.className='history';
+ card.style.width=`${bound(innerWidth*.39,275,515)}px`;
+ const date=document.createElement('small');date.textContent=`🗂 HEMEROTECA · ${event.date} · ${event.line} · NO ÉS AVÍS EN DIRECTE`;
+ const title=document.createElement('strong');title.textContent=event.title;
+ const fact=document.createElement('p');fact.textContent=event.fact;
+ const link=document.createElement('a');link.textContent='CONSULTAR FONT ↗';link.href=event.url;link.target='_blank';link.rel='noopener noreferrer';
+ card.append(date,title,fact,link);
+ stamp(card);addTemporary(card,'history',boost?4:3,$random(7700,12500));
+}
+function initLines(){
+ LINES.forEach(([name,route],index)=>{
+  const button=document.createElement('button');button.className='lineChip';
+  button.textContent=name;button.title=name+' · '+route;
+  button.type='button';
+  button.addEventListener('click',()=>{
+    selectLine(index);createHistory(name);createPhoto();createGiant();
+  });
+  lineboard.appendChild(button);
+ });
+ selectLine(0);
+}
+function selectLine(index){
+ activeLine=index%LINES.length;
+ const [code,route]=LINES[activeLine];
+ Array.from(lineboard.children).forEach((el,i)=>{
+  el.classList.toggle('active',i===activeLine);
+  el.setAttribute('aria-pressed',i===activeLine?'true':'false');
+ });
+ lineDetail.textContent=`🚆 ${code} · ${route} · SITUACIÓ ACTUAL: AQUESTA WEB ÉS UNA PARÒDIA`;
+ document.querySelector('#info .status').firstChild.textContent=code+' ';
 }
 function createNotice(){
  const el=document.createElement('div');el.className='notice';
  const head=document.createElement('span');head.className='heading';head.textContent='⚠ AVÍS FICTICI · NO OFICIAL';
  const msg=document.createElement('div');msg.className='msg';msg.textContent=pick(ALERTS);
+  el.style.width=`${Math.min(innerWidth*.6,440)}px`;
  el.append(head,msg);stamp(el);addTemporary(el,'notice',boost?5:3,$random(3200,6100));
 }
 function createTicket(){
@@ -205,6 +398,7 @@ function createGiant(){
 }
 function updatePanel(){
  const stop=STATIONS[stationIndex++%STATIONS.length];
+ selectLine(Math.floor($random(0,LINES.length)));
  stationText.textContent=pick([`PROPERA PARADA: ${stop}`,`DESTINACIÓ DESCONEGUDA · ${stop}`,`ATENCIÓ: ${stop}`,`CANVI DE VIA A ${stop}`]);
  delay.textContent=`+${Math.floor($random(15,999))}'`;
 }
@@ -223,20 +417,21 @@ function blinkMild(){
 }
 function tickChaos(){
  createText();
- if(Math.random() < (boost?.82:.5)) createPhoto();
- if(Math.random() < (boost?.2:.07)) createNotice();
+ if(Math.random() < (boost?.98:.78)) createPhoto();
+ if(Math.random() < (boost?.29:.13)) createNotice();
+ if(Math.random() < (boost?.19:.075)) createHistory();
  if(Math.random() < .028) createTicket();
  if(Math.random() < (boost?.1:.025)) createGiant();
 }
 window.addEventListener('keydown',async(e)=>{
- if(e.code==='Space'){e.preventDefault();boost=!boost;document.querySelector('#center h2').textContent=boost?'MODO TURBO · +9999 MIN':'2.0 — RETARD INDEFINIT';}
+ if(e.code==='Space'){e.preventDefault();boost=!boost;document.querySelector('#center h2').textContent=boost?'MODO TURBO · +9999 MIN':'3.0 — RETARD INDEFINIT';}
  if(e.key.toLowerCase()==='f'){
   try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();}catch(err){console.log('Pantalla completa no disponible',err)}
  }
 });
 window.addEventListener('resize',()=>{tickerX=innerWidth});
-preloadPhotos();updatePanel();updateClock();requestAnimationFrame(animateTicker);
-setInterval(tickChaos,390);
+initLines();preloadPhotos();createHistory();createPhoto();updatePanel();updateClock();requestAnimationFrame(animateTicker);
+setInterval(tickChaos,boost?360:440);
 setInterval(updatePanel,4200);
 setInterval(updateClock,1000);
 setInterval(blinkMild,12000);
