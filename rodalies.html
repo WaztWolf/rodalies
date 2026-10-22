@@ -1,742 +1,86 @@
-<!DOCTYPE html>
-<html lang="ca">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+# Rodalies Chaos 2.0 - Windows launcher (PowerShell 5.1+)
+# No installation, administrator permissions or persistent background task required.
+$ErrorActionPreference = 'Stop'
 
-<title>Rodalies CHAOS 💜</title>
+$base = 'https://raw.githubusercontent.com/WaztWolf/rodalies/main'
+$source = "$base/rodalies.html?v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+$workDir = Join-Path $env:TEMP 'rodalies-chaos'
+$htmlFile = Join-Path $workDir 'rodalies.html'
 
-<style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-    }
-
-    body {
-        font-family: monospace;
-    }
-
-    #chaos {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
-        pointer-events: none;
-        overflow: hidden;
-        z-index: 999998;
-    }
-
-    #panel {
-        position: fixed;
-        top: 0;
-        left: 0;
-
-        width: 100vw;
-        height: 55px;
-
-        background: #050505;
-        color: #00ff00;
-
-        font-family: monospace;
-        font-size: clamp(16px, 2vw, 30px);
-        font-weight: bold;
-
-        overflow: hidden;
-
-        display: flex;
-        align-items: center;
-
-        border-bottom: 3px solid #00ff00;
-
-        z-index: 999999;
-        box-sizing: border-box;
-    }
-
-    #panelText {
-        white-space: nowrap;
-        position: absolute;
-        left: 0;
-    }
-
-    #warning {
-        position: fixed;
-        left: 50%;
-        bottom: 20px;
-
-        transform: translateX(-50%);
-
-        padding: 8px 16px;
-
-        background: rgba(0,0,0,.75);
-        color: white;
-
-        border: 1px solid rgba(255,255,255,.4);
-        border-radius: 8px;
-
-        font-family: monospace;
-        font-size: 13px;
-
-        z-index: 1000000;
-
-        opacity: .7;
-    }
-
-    .chaosText {
-        position: absolute;
-        font-weight: 900;
-        text-shadow:
-            0 0 5px black,
-            0 0 10px black,
-            0 0 20px black;
-
-        white-space: nowrap;
-
-        user-select: none;
-    }
-
-    .chaosImage {
-        position: absolute;
-        object-fit: contain;
-
-        user-select: none;
-
-        pointer-events: none;
-
-        filter:
-            saturate(2)
-            contrast(1.2);
-    }
-
-    .flash {
-        position: fixed;
-        inset: 0;
-
-        background: white;
-
-        pointer-events: none;
-
-        z-index: 999997;
-
-        animation: flash .12s linear forwards;
-    }
-
-    @keyframes flash {
-        from {
-            opacity: .8;
-        }
-
-        to {
-            opacity: 0;
+function Find-ChromiumBrowser {
+    $candidates = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($name in @('msedge.exe', 'chrome.exe')) {
+        foreach ($regPath in @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name",
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name"
+        )) {
+            try {
+                $regItem = Get-Item -LiteralPath $regPath -ErrorAction Stop
+                $value = $regItem.GetValue('')
+                if ($value) { $candidates.Add([string]$value) }
+            } catch { }
         }
     }
-</style>
-</head>
-
-<body>
-
-<div id="chaos"></div>
-
-<div id="panel">
-    <div id="panelText"></div>
-</div>
-
-<div id="warning">
-    RODALIES CHAOS MODE 🚆💀
-</div>
-
-<script>
-
-/* =========================================================
-   RODALIES CHAOS
-   Versió HTML standalone
-========================================================= */
-
-
-/* =========================
-   FRASES
-========================= */
-
-const FRASES = [
-    "Servei Rodalies de Catalunya 💜",
-    "Retard indefinit ⚠️",
-    "Incidència tècnica 🚧",
-    "Disculpin les molèsties 🙃",
-    "Circulació interrompuda 🛑",
-    "El tren no passarà 🫠",
-    "Servei mínim 😭",
-    "Caos ferroviari 💀",
-    "Tren suprimit ❌🚆",
-    "Retard acumulat ⚠️",
-    "Incidència a la línia 🚧",
-    "Esperin indicacions 📢",
-    "Gràcies per la seva paciència 🙂",
-    "Servei afectat 💀",
-    "Pròxim tren: probablement",
-    "ATENCIÓ PASSATGERS ⚠️",
-    "NO HI HA TREN 😭",
-    "Rodalies moment™",
-    "Renfe diu que tot va bé 👍",
-    "Circulació amb alteracions",
-    "El tren està arribant... o no",
-    "AVÍS IMPORTANT 📢",
-    "CANVI DE VIA 🚨",
-    "TREN CANCEL·LAT 💀"
-];
-
-
-/* =========================
-   PARADAS
-========================= */
-
-const PARADAS = [
-    "L'Hospitalet de Llobregat",
-"Barcelona-Sants",
-"Barcelona-Plaça de Catalunya",
-"Barcelona-Arc de Triomf",
-"Barcelona-La Sagrera-Meridiana",
-"Barcelona-Sant Andreu Arenal",
-"Barcelona-Torre del Baró",
-"Montcada Bifurcació",
-"Montcada Ripollet",
-"Santa Perpètua de Mogoda La Florida",
-"Mollet Santa Rosa",
-"Parets del Vallès",
-"Granollers-Canovelles",
-"Les Franqueses del Vallès",
-"La Garriga",
-"Figaró",
-"Sant Martí de Centelles",
-"Centelles",
-"Balenyà-Els Hostalets",
-"Balenyà-Tona-Seva",
-"Vic",
-"Manlleu",
-"Torelló",
-"Borgonyà",
-"Sant Quirze de Besora",
-"La Farga de Bebié",
-"Ripoll",
-"Campdevànol",
-"Ribes de Freser",
-"Planoles",
-"Toses",
-"La Molina",
-"Urtx-Alp",
-"Puigcerdà",
-"La Tor de Querol-Enveig",
-    "Molins de Rei",
-"Sant Feliu de Llobregat",
-"Sant Joan Despí",
-"Cornellà",
-"L'Hospitalet de Llobregat",
-"Barcelona-Sants",
-"Barcelona-Plaça de Catalunya",
-"Barcelona-Arc de Triomf",
-"Barcelona-La Sagrera-Meridiana",
-"Barcelona-Fabra i Puig",
-"Barcelona-Torre Baró | Vallbona",
-"Barcelona-El Clot",
-"Barcelona-Passeig de Gràcia",
-"Barcelona-Estació de França",
-"Barcelona-Sant Andreu",
-"Montcada Bifurcació",
-"Montcada i Reixac-Manresa",
-"Montcada i Reixac-Santa Maria",
-"Montcada i Reixac",
-"Montcada Ripollet",
-"La Llagosta",
-"Mollet-Sant Fost",
-"Mollet Santa Rosa",
-"Santa Perpètua de Mogoda La Florida",
-"Montmeló",
-"Granollers Centre",
-"Granollers-Canovelles",
-"Les Franqueses-Granollers Nord",
-"Les Franqueses del Vallès",
-"Cardedeu",
-"Llinars del Vallès",
-"Palautordera",
-"Sant Celoni",
-"Gualba",
-"Riells i Viabrea-Breda",
-"Hostalric",
-"Maçanet-Massanes",
-
-"Castelldefels",
-"Platja de Castelldefels",
-"Gavà",
-"Viladecans",
-"Aeroport",
-"El Prat de Llobregat",
-"Bellvitge | Gornal",
-
-"Garraf",
-"Sitges",
-"Vilanova i la Geltrú",
-"Cubelles",
-"Cunit",
-"Segur de Calafell",
-"Calafell",
-"El Vendrell",
-"Sant Vicenç de Calders",
-
-"El Papiol",
-"Castellbisbal",
-"Martorell Central",
-"Gelida",
-"Sant Sadurní d'Anoia",
-"Lavern-Subirats",
-"La Granada",
-"Vilafranca del Penedès",
-"Els Monjos",
-"L'Arboç",
-
-"Cerdanyola del Vallès",
-"Barberà del Vallès",
-"Sabadell Sud",
-"Sabadell Centre",
-"Sabadell Nord",
-"Terrassa Est",
-"Terrassa Estació del Nord",
-"Sant Miquel de Gonteres-Viladecavalls",
-"Viladecavalls",
-"Vacarisses-Torreblanca",
-"Vacarisses",
-"Castellbell i el Vilar-Monistrol",
-"Sant Vicenç de Castellet",
-"Manresa",
-
-"Montcada i Reixac-Manresa",
-"Cerdanyola-Universitat",
-"Martorell",
-"Rubí",
-"Sant Cugat del Vallès",
-
-"Granollers Centre",
-
-"Vic",
-"Balenyà-Tona-Seva",
-"Balenyà-Els Hostalets",
-"Centelles",
-"Sant Martí de Centelles",
-"Figaró",
-"La Garriga",
-"Manlleu",
-"Torelló",
-"Borgonyà",
-"Sant Quirze de Besora-Montesquiu",
-"La Farga de Bebié",
-"Ripoll",
-"Campdevànol",
-"Ribes de Freser",
-"Planoles",
-"Toses",
-"La Molina",
-"Urtx-Alp",
-"Puigcerdà",
-"La Tor de Querol-Enveig",
-
-"Mataró",
-"Montgat",
-"Montgat Nord",
-"El Masnou",
-"Ocata",
-"Premià de Mar",
-"Vilassar de Mar",
-"Cabrera de Mar",
-"Vilassar de Mar",
-"Premià de Mar",
-"Arenys de Mar",
-"Caldes d'Estrac",
-"Canet de Mar",
-"San Pol de Mar",
-"Calella",
-"Pineda de Mar",
-"Santa Susanna",
-"Malgrat de Mar",
-"Blanes",
-"Tordera",
-
-"Sils",
-"Caldes de Malavella",
-"Riudellots de la Selva",
-"Fornells de la Selva",
-"Girona",
-"Celrà",
-"Bordils-Juià",
-"Flaçà",
-"Sant Jordi Desvalls",
-"Camallera",
-"Sant Miquel de Fluvià",
-"Vilamalla",
-"Figueres",
-"Vilajuïga",
-"Llançà",
-"Colera",
-"Portbou"
-];
-
-
-/* =========================
-   IMÁGENES
-========================= */
-
-const imagenes = [
-
-    "https://upload.wikimedia.org/wikipedia/commons/7/79/Rodalies_tren_malgrat_de_mar_RENFE_Class_447.JPG",
-
-    "https://upload.wikimedia.org/wikipedia/commons/0/03/Rodalies_CAT_2010-06-09_21-46-36.jpg",
-
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Rodalies_de_Catalunya_logo.svg/512px-Rodalies_de_Catalunya_logo.svg.png",
-
-    "https://www.newtral.es/wp-content/uploads/2023/08/2220272041-FF-TREN-RODALIES-shutterstock-scaled.jpg",
-
-    "https://imagenes.cope.es/files/webp_425_238/uploads/2025/08/25/68ac422b35c9a.webp",
-
-    "https://rodalies.gencat.cat/web/.content/01_Actualitat/2026/05_08_Abonaments_2026/BANNER_CAST.png_223078711.png",
-
-    "https://www.viaempresa.cat/uploads/s1/26/49/21/24/rodalies-catalunya.jpeg",
-
-    "https://www.catalunyapress.es/images/showid2/7813510?w=1200&zc=4",
-
-    "https://e01-elmundo.uecdn.es/assets/multimedia/imagenes/2026/01/21/17690323788908.jpg",
-
-    "https://www.elplural.com/uploads/s1/24/30/19/1/diseno-sin-titulo-76.jpeg",
-
-    "https://www.viaempresa.cat/uploads/s1/27/15/03/76/a616fd53-d753-4368-bd45-fceecea8a46a.jpeg",
-
-    "https://www.trenvista.net/wp-content/uploads/2021/08/Unidad-447-de-Renfe-con-los-colores-de-Rodalies-de-Catalunya.jpg",
-
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeVSlD7-wJbY19X5P78BuDLjHCObsxzDE5BWslrGKLyoTypYeoYwunPxlt&s=10"
-
-];
-
-
-/* =========================
-   UTILIDADES
-========================= */
-
-function random(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-
-function randomItem(array) {
-    return array[Math.floor(Math.random() * array.length)];
-}
-
-
-function colorRandom() {
-
-    return `hsl(
-        ${Math.floor(Math.random() * 360)},
-        100%,
-        50%
-    )`;
-}
-
-
-/* =========================
-   ELEMENTOS
-========================= */
-
-const chaos = document.getElementById("chaos");
-const panelText = document.getElementById("panelText");
-
-
-/* =========================
-   TEXTO CAOS
-========================= */
-
-function crearTexto() {
-
-    const span = document.createElement("span");
-
-    span.className = "chaosText";
-
-    span.textContent = randomItem(FRASES);
-
-    const size = random(18, 85);
-
-    Object.assign(span.style, {
-
-        left:
-            random(
-                -100,
-                Math.max(window.innerWidth - 100, 100)
-            ) + "px",
-
-        top:
-            random(
-                60,
-                Math.max(window.innerHeight - 80, 100)
-            ) + "px",
-
-        color: colorRandom(),
-
-        fontSize: size + "px",
-
-        transform:
-            `rotate(${random(-45,45)}deg)
-             scale(${random(.5,2)})`
-
-    });
-
-    chaos.appendChild(span);
-
-    setTimeout(() => {
-
-        span.style.transition =
-            "opacity .5s, transform .5s";
-
-        span.style.opacity = "0";
-
-        setTimeout(() => span.remove(), 600);
-
-    }, random(1800,5000));
-}
-
-
-/* =========================
-   IMAGEN CAOS
-========================= */
-
-function crearImagen() {
-
-    const img = document.createElement("img");
-
-    img.className = "chaosImage";
-
-    img.src = randomItem(imagenes);
-
-    img.alt = "Rodalies";
-
-    Object.assign(img.style, {
-
-        left:
-            random(
-                -100,
-                Math.max(window.innerWidth - 100, 100)
-            ) + "px",
-
-        top:
-            random(
-                60,
-                Math.max(window.innerHeight - 150, 100)
-            ) + "px",
-
-        width: random(80,400) + "px",
-
-        transform:
-            `rotate(${random(-30,30)}deg)
-             scale(${random(.5,1.5)})`,
-
-        filter:
-            `hue-rotate(${random(0,360)}deg)
-             saturate(${random(1.5,3)})`
-    });
-
-    chaos.appendChild(img);
-}
-
-
-/* =========================
-   PANEL
-========================= */
-
-let paradaIndex = 0;
-
-
-function iniciarPanel() {
-
-    function siguiente() {
-
-        const parada =
-            PARADAS[paradaIndex % PARADAS.length];
-
-        const mensajes = [
-
-            `Próxima Parada: ${parada} ⚠️`,
-
-            `PROPERA PARADA: ${parada} 🚆`,
-
-            `ATENCIÓ: ${parada} 🚨`,
-
-            `DESTÍ: ${parada} 💜`
-
-        ];
-
-        panelText.textContent =
-            randomItem(mensajes);
-
-        panelText.style.transform =
-            "translateX(-100%)";
-
-        panelText.animate(
-
-            [
-                {
-                    transform: "translateX(-100%)"
-                },
-
-                {
-                    transform: "translateX(120vw)"
-                }
-
-            ],
-
-            {
-                duration: random(4500,7000),
-                easing: "linear"
-            }
-
-        ).onfinish = siguiente;
-
-        paradaIndex++;
-    }
-
-    siguiente();
-}
-
-
-/* =========================
-   FLASH ALEATORIO
-========================= */
-
-function flashRandom() {
-
-    const flash =
-        document.createElement("div");
-
-    flash.className = "flash";
-
-    document.body.appendChild(flash);
-
-    setTimeout(() => {
-        flash.remove();
-    }, 150);
-}
-
-
-/* =========================
-   EFECTO TEMBLOR
-========================= */
-
-function shakeScreen() {
-
-    document.body.animate(
-
-        [
-            {
-                transform: "translate(0,0)"
-            },
-
-            {
-                transform:
-                    `translate(
-                        ${random(-8,8)}px,
-                        ${random(-8,8)}px
-                    )`
-            },
-
-            {
-                transform: "translate(0,0)"
-            }
-
-        ],
-
-        {
-            duration: 180,
-            iterations: 2
+    $pf = [Environment]::GetFolderPath('ProgramFiles')
+    $pfx86 = [Environment]::GetFolderPath('ProgramFilesX86')
+    foreach ($root in @($pf, $pfx86, $env:LOCALAPPDATA)) {
+        if (-not [string]::IsNullOrWhiteSpace($root)) {
+            $candidates.Add((Join-Path $root 'Microsoft\Edge\Application\msedge.exe'))
+            $candidates.Add((Join-Path $root 'Google\Chrome\Application\chrome.exe'))
         }
-
-    );
-}
-
-
-/* =========================
-   PANTALLA COMPLETA
-========================= */
-
-async function fullscreen() {
-
-    try {
-
-        if (!document.fullscreenElement) {
-
-            await document.documentElement
-                .requestFullscreen();
-
-        }
-
-    } catch (error) {
-
-        console.log(
-            "Fullscreen no disponible:",
-            error
-        );
-
     }
+    foreach ($name in @('msedge.exe', 'chrome.exe')) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($command -and $command.Source) { $candidates.Add([string]$command.Source) }
+    }
+    foreach ($candidate in $candidates) {
+        $clean = $candidate.Trim('"')
+        if (Test-Path -LiteralPath $clean -PathType Leaf) { return $clean }
+    }
+    return $null
 }
 
+Write-Host ''
+Write-Host '===============================================' -ForegroundColor Magenta
+Write-Host '     RODALIES CHAOS 2.0 / WINDOWS' -ForegroundColor Cyan
+Write-Host '===============================================' -ForegroundColor Magenta
 
-/* =========================
-   INICIO
-========================= */
-
-function iniciarTodo() {
-
-    iniciarPanel();
-
-    setInterval(
-        crearTexto,
-        100
-    );
-
-    setInterval(
-        crearImagen,
-        600
-    );
-
-    setInterval(
-        () => {
-
-            if (Math.random() < .25) {
-                flashRandom();
-            }
-
-            if (Math.random() < .35) {
-                shakeScreen();
-            }
-
-        },
-        2500
-    );
-
+try {
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    }
+    $browser = Find-ChromiumBrowser
+    if (-not $browser) {
+        throw 'No se ha encontrado Microsoft Edge o Google Chrome. Instala uno para usar la ventana sin bordes.'
+    }
+    New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+    Write-Host '[1/3] Descargando el HTML...' -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $source -OutFile $htmlFile -UseBasicParsing -TimeoutSec 30
+    if ((Get-Item -LiteralPath $htmlFile).Length -lt 200) {
+        throw 'El archivo descargado esta vacio o no parece un HTML valido.'
+    }
+    $header = Get-Content -LiteralPath $htmlFile -TotalCount 1
+    if ($header -notmatch '<!DOCTYPE html|<html') {
+        throw 'GitHub no ha devuelto una pagina HTML valida.'
+    }
+    # Unique profile forces a NEW Chromium process even if the normal browser is already open.
+    $profileDir = Join-Path $workDir ('profile-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+    $fileUri = ([System.Uri]::new([IO.Path]::GetFullPath($htmlFile))).AbsoluteUri
+    Write-Host "[2/3] Navegador: $browser" -ForegroundColor Cyan
+    $arguments = @(
+        "--user-data-dir=`"$profileDir`""
+        "--app=`"$fileUri`""
+        '--start-fullscreen'
+        '--new-window'
+        '--no-first-run'
+        '--no-default-browser-check'
+        '--disable-extensions'
+    )
+    Write-Host '[3/3] Abriendo una ventana independiente...' -ForegroundColor Green
+    Start-Process -FilePath $browser -ArgumentList ($arguments -join ' ') | Out-Null
+    Write-Host 'Rodalies activado. Cierra con Alt+F4. Pulsa F si necesitas forzar fullscreen.' -ForegroundColor Magenta
+} catch {
+    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    throw
 }
-
-
-/* =========================
-   INTERACCIÓN
-========================= */
-
-document.addEventListener(
-    "click",
-    fullscreen
-);
-
-
-/* =========================
-   ARRANCAR
-========================= */
-
-iniciarTodo();
-
-</script>
-
-</body>
-</html>
