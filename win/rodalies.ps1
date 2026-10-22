@@ -1,122 +1,86 @@
-$ErrorActionPreference = "Stop"
+# Rodalies Chaos 2.0 - Windows launcher (PowerShell 5.1+)
+# No installation, administrator permissions or persistent background task required.
+$ErrorActionPreference = 'Stop'
 
-$HTML_URL = "https://raw.githubusercontent.com/WaztWolf/rodalies/main/rodalies.html"
-$TEMP_HTML = Join-Path $env:TEMP "rodalies-chaos.html"
+$base = 'https://raw.githubusercontent.com/WaztWolf/rodalies/main'
+$source = "$base/rodalies.html?v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+$workDir = Join-Path $env:TEMP 'rodalies-chaos'
+$htmlFile = Join-Path $workDir 'rodalies.html'
 
-Write-Host ""
-Write-Host "==============================================" -ForegroundColor Magenta
-Write-Host "           RODALIES CHAOS MODE" -ForegroundColor Cyan
-Write-Host "==============================================" -ForegroundColor Magenta
-Write-Host ""
-
-Write-Host "[+] Descargando Rodalies Chaos..." -ForegroundColor Yellow
-
-Invoke-WebRequest `
-    -Uri $HTML_URL `
-    -OutFile $TEMP_HTML `
-    -UseBasicParsing
-
-Write-Host "[+] HTML descargado." -ForegroundColor Green
-
-$browser = $null
-$isEdge = $false
-
-$edgePaths = @(
-    "$env:ProgramFiles(x86)\Microsoft\Edge\Application\msedge.exe",
-    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
-    "$env:LOCALAPPDATA\Microsoft\Edge\Application\msedge.exe"
-)
-
-foreach ($path in $edgePaths) {
-    if (Test-Path $path) {
-        $browser = $path
-        $isEdge = $true
-        break
-    }
-}
-
-if (-not $browser) {
-
-    $chromePaths = @(
-        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-        "$env:ProgramFiles(x86)\Google\Chrome\Application\chrome.exe",
-        "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-    )
-
-    foreach ($path in $chromePaths) {
-        if (Test-Path $path) {
-            $browser = $path
-            break
+function Find-ChromiumBrowser {
+    $candidates = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($name in @('msedge.exe', 'chrome.exe')) {
+        foreach ($regPath in @(
+            "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name",
+            "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name"
+        )) {
+            try {
+                $regItem = Get-Item -LiteralPath $regPath -ErrorAction Stop
+                $value = $regItem.GetValue('')
+                if ($value) { $candidates.Add([string]$value) }
+            } catch { }
         }
     }
-}
-
-if (-not $browser) {
-
-    $edge = Get-Command msedge.exe -ErrorAction SilentlyContinue
-
-    if ($edge) {
-        $browser = $edge.Source
-        $isEdge = $true
+    $pf = [Environment]::GetFolderPath('ProgramFiles')
+    $pfx86 = [Environment]::GetFolderPath('ProgramFilesX86')
+    foreach ($root in @($pf, $pfx86, $env:LOCALAPPDATA)) {
+        if (-not [string]::IsNullOrWhiteSpace($root)) {
+            $candidates.Add((Join-Path $root 'Microsoft\Edge\Application\msedge.exe'))
+            $candidates.Add((Join-Path $root 'Google\Chrome\Application\chrome.exe'))
+        }
     }
-}
-
-if (-not $browser) {
-
-    $chrome = Get-Command chrome.exe -ErrorAction SilentlyContinue
-
-    if ($chrome) {
-        $browser = $chrome.Source
+    foreach ($name in @('msedge.exe', 'chrome.exe')) {
+        $command = Get-Command $name -ErrorAction SilentlyContinue
+        if ($command -and $command.Source) { $candidates.Add([string]$command.Source) }
     }
+    foreach ($candidate in $candidates) {
+        $clean = $candidate.Trim('"')
+        if (Test-Path -LiteralPath $clean -PathType Leaf) { return $clean }
+    }
+    return $null
 }
 
-if (-not $browser) {
+Write-Host ''
+Write-Host '===============================================' -ForegroundColor Magenta
+Write-Host '     RODALIES CHAOS 2.0 / WINDOWS' -ForegroundColor Cyan
+Write-Host '===============================================' -ForegroundColor Magenta
 
-    Write-Host ""
-    Write-Host "[!] No se encontró Microsoft Edge ni Google Chrome." -ForegroundColor Red
-    Write-Host "[+] Abriendo el archivo normalmente..." -ForegroundColor Yellow
-
-    Start-Process $TEMP_HTML
-
-    exit 0
+try {
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    }
+    $browser = Find-ChromiumBrowser
+    if (-not $browser) {
+        throw 'No se ha encontrado Microsoft Edge o Google Chrome. Instala uno para usar la ventana sin bordes.'
+    }
+    New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+    Write-Host '[1/3] Descargando el HTML...' -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $source -OutFile $htmlFile -UseBasicParsing -TimeoutSec 30
+    if ((Get-Item -LiteralPath $htmlFile).Length -lt 200) {
+        throw 'El archivo descargado esta vacio o no parece un HTML valido.'
+    }
+    $header = Get-Content -LiteralPath $htmlFile -TotalCount 1
+    if ($header -notmatch '<!DOCTYPE html|<html') {
+        throw 'GitHub no ha devuelto una pagina HTML valida.'
+    }
+    # Unique profile forces a NEW Chromium process even if the normal browser is already open.
+    $profileDir = Join-Path $workDir ('profile-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+    $fileUri = ([System.Uri]::new([IO.Path]::GetFullPath($htmlFile))).AbsoluteUri
+    Write-Host "[2/3] Navegador: $browser" -ForegroundColor Cyan
+    $arguments = @(
+        "--user-data-dir=`"$profileDir`""
+        "--app=`"$fileUri`""
+        '--start-fullscreen'
+        '--new-window'
+        '--no-first-run'
+        '--no-default-browser-check'
+        '--disable-extensions'
+    )
+    Write-Host '[3/3] Abriendo una ventana independiente...' -ForegroundColor Green
+    Start-Process -FilePath $browser -ArgumentList ($arguments -join ' ') | Out-Null
+    Write-Host 'Rodalies activado. Cierra con Alt+F4. Pulsa F si necesitas forzar fullscreen.' -ForegroundColor Magenta
+} catch {
+    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    throw
 }
-
-Write-Host "[+] Navegador encontrado:" -ForegroundColor Green
-Write-Host "    $browser" -ForegroundColor DarkGray
-
-Write-Host ""
-Write-Host "[+] ACTIVANDO RODALIES CHAOS..." -ForegroundColor Cyan
-Write-Host ""
-
-# La URL va justo después de --kiosk, tal y como piden los dos navegadores.
-$argList = @(
-    "--kiosk",
-    "file:///$TEMP_HTML",
-    "--disable-infobars",
-    "--disable-features=Translate",
-    "--no-first-run",
-    "--no-default-browser-check"
-)
-
-if ($isEdge) {
-    # CLAVE DEL BUG: Edge, a diferencia de Chrome, tiene dos modos de kiosko
-    # ("public-browsing" y "fullscreen"/digital signage). Sin especificar
-    # --edge-kiosk-type=fullscreen, Edge se queda en "public-browsing":
-    # una ventana con barra de pestañas y de direcciones, que NO es pantalla
-    # completa. Por eso no se veía en full screen.
-    $argList += "--edge-kiosk-type=fullscreen"
-    $argList += "--kiosk-idle-timeout-minutes=0"
-} else {
-    # Chrome sí entra en verdadero kiosko fullscreen solo con --kiosk,
-    # pero añadimos esto igualmente por si acaso.
-    $argList += "--start-maximized"
-}
-
-Start-Process `
-    -FilePath $browser `
-    -ArgumentList $argList
-
-Write-Host "==============================================" -ForegroundColor Magenta
-Write-Host "       🚆 CAOS FERROVIARI ACTIVAT 🚆" -ForegroundColor Cyan
-Write-Host "==============================================" -ForegroundColor Magenta
-Write-Host ""
