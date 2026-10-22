@@ -94,3 +94,116 @@ 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
+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
+Xxg9KscXpcvyf5fx352xzI8/QwAA
+'@
+    $bytes = [Convert]::FromBase64String(($embedded -replace '\s', ''))
+    $inputStream = [System.IO.MemoryStream]::new($bytes)
+    $gzip = [System.IO.Compression.GZipStream]::new($inputStream, [System.IO.Compression.CompressionMode]::Decompress)
+    $outputStream = [System.IO.MemoryStream]::new()
+    try {
+        $gzip.CopyTo($outputStream)
+        [IO.File]::WriteAllBytes($path, $outputStream.ToArray())
+    } finally {
+        $outputStream.Dispose()
+        $gzip.Dispose()
+        $inputStream.Dispose()
+    }
+}
+
+Write-Host ''
+Write-Host '===============================================' -ForegroundColor Magenta
+Write-Host '     RODALIES CHAOS 2.1 / WINDOWS' -ForegroundColor Cyan
+Write-Host '===============================================' -ForegroundColor Magenta
+
+try {
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    }
+    $browser = Find-ChromiumBrowser
+    if (-not $browser) {
+        throw 'No se ha encontrado Microsoft Edge ni Google Chrome.'
+    }
+    New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+
+    Write-Host '[1/3] Comprobando el HTML de GitHub...' -ForegroundColor Yellow
+    $useFallback = $false
+    try {
+        # Ensure a stale version can never be mistaken for a successful download.
+        if (Test-Path -LiteralPath $htmlFile) { Remove-Item -LiteralPath $htmlFile -Force }
+        Invoke-WebRequest -Uri $htmlUrl -OutFile $htmlFile -UseBasicParsing -TimeoutSec 12 -Headers @{ 'Cache-Control'='no-cache' }
+        if (-not (Test-RodaliesHtml $htmlFile)) {
+            Write-Host '[AVISO] El HTML remoto no tiene el formato esperado. Uso la copia integrada.' -ForegroundColor Yellow
+            $useFallback = $true
+        }
+    } catch {
+        Write-Host ("[AVISO] No se pudo descargar el HTML: " + $_.Exception.Message) -ForegroundColor Yellow
+        $useFallback = $true
+    }
+    if ($useFallback) {
+        Write-BundledHtml $htmlFile
+        Write-Host '[OK] Copia de Rodalies integrada en el script.' -ForegroundColor Green
+    }
+    if (-not (Test-RodaliesHtml $htmlFile)) {
+        throw 'No se pudo preparar el HTML ni desde GitHub ni desde la copia integrada.'
+    }
+
+    # Independent Chromium profile => a new app window, not an existing browser tab.
+    $profileDir = Join-Path $workDir ('profile-' + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
+    $fileUri = ([System.Uri]::new([IO.Path]::GetFullPath($htmlFile))).AbsoluteUri
+    Write-Host "[2/3] Navegador: $browser" -ForegroundColor Cyan
+    $arguments = @(
+        "--user-data-dir=`"$profileDir`""
+        "--app=`"$fileUri`""
+        '--start-fullscreen'
+        '--new-window'
+        '--no-first-run'
+        '--no-default-browser-check'
+        '--disable-extensions'
+    )
+    Write-Host '[3/3] Abriendo una ventana independiente...' -ForegroundColor Green
+    Start-Process -FilePath $browser -ArgumentList ($arguments -join ' ') | Out-Null
+    Write-Host 'Rodalies activado. Alt+F4: cerrar | F: pantalla completa | Espacio: turbo' -ForegroundColor Magenta
+} catch {
+    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    throw
+}
