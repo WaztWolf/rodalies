@@ -1,86 +1,247 @@
-# Rodalies Chaos 2.0 - Windows launcher (PowerShell 5.1+)
-# No installation, administrator permissions or persistent background task required.
-$ErrorActionPreference = 'Stop'
-
-$base = 'https://raw.githubusercontent.com/WaztWolf/rodalies/main'
-$source = "$base/rodalies.html?v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
-$workDir = Join-Path $env:TEMP 'rodalies-chaos'
-$htmlFile = Join-Path $workDir 'rodalies.html'
-
-function Find-ChromiumBrowser {
-    $candidates = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($name in @('msedge.exe', 'chrome.exe')) {
-        foreach ($regPath in @(
-            "HKCU:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name",
-            "HKLM:\Software\Microsoft\Windows\CurrentVersion\App Paths\$name"
-        )) {
-            try {
-                $regItem = Get-Item -LiteralPath $regPath -ErrorAction Stop
-                $value = $regItem.GetValue('')
-                if ($value) { $candidates.Add([string]$value) }
-            } catch { }
-        }
-    }
-    $pf = [Environment]::GetFolderPath('ProgramFiles')
-    $pfx86 = [Environment]::GetFolderPath('ProgramFilesX86')
-    foreach ($root in @($pf, $pfx86, $env:LOCALAPPDATA)) {
-        if (-not [string]::IsNullOrWhiteSpace($root)) {
-            $candidates.Add((Join-Path $root 'Microsoft\Edge\Application\msedge.exe'))
-            $candidates.Add((Join-Path $root 'Google\Chrome\Application\chrome.exe'))
-        }
-    }
-    foreach ($name in @('msedge.exe', 'chrome.exe')) {
-        $command = Get-Command $name -ErrorAction SilentlyContinue
-        if ($command -and $command.Source) { $candidates.Add([string]$command.Source) }
-    }
-    foreach ($candidate in $candidates) {
-        $clean = $candidate.Trim('"')
-        if (Test-Path -LiteralPath $clean -PathType Leaf) { return $clean }
-    }
-    return $null
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RODALIES CHAOS 2.0 — Paròdia</title>
+<style>
+:root { color-scheme: dark; --ink:#f9f8f2; --orange:#ff782d; --purple:#a65aff; --acid:#b2ff27; }
+* { box-sizing: border-box; }
+html,body { margin:0; width:100%;height:100%;overflow:hidden; background:#080811; color:var(--ink); font-family: system-ui, Arial, sans-serif; }
+body { background:radial-gradient(ellipse at 50% 60%,#27233d 0%,#080811 65%); }
+#stage { position:fixed; inset:0; overflow:hidden; isolation:isolate; }
+#grid { position:absolute;inset:0; opacity:.23; background-image:linear-gradient(#a65aff23 1px,transparent 1px),linear-gradient(90deg,#a65aff23 1px,transparent 1px);background-size:55px 55px; transform:perspective(550px) rotateX(23deg) scale(1.2); }
+#ribbon { position:absolute;left:0;right:0;top:0;height:63px;background:#f5692b;color:#180917;border-bottom:6px solid #eac6ff;box-shadow:0 7px 38px #000a;display:flex;align-items:center;overflow:hidden;z-index:80; }
+#ribbonTag { flex-shrink:0;background:#150d25;color:#fdf6ed;padding:17px 20px;letter-spacing:.12em;font-weight:1000;font-size:17px;height:100%;z-index:2; }
+#ticker { white-space:nowrap;font-size:clamp(22px,3vw,35px);font-weight:1000;letter-spacing:.035em;will-change:transform;padding-left:20px; }
+#center { position:absolute;top:49%;left:50%;transform:translate(-50%,-50%) rotate(-3deg);text-align:center;width:min(90vw,1100px);pointer-events:none;z-index:3; opacity:.94;filter:drop-shadow(0 8px 0 #000c); }
+#center .eyebrow { font-size:clamp(13px,1.8vw,24px);letter-spacing:.33em;font-weight:900;color:#ffd7b8; }
+#center h1 { margin:0;font-size:clamp(53px,10vw,155px);line-height:.86;font-weight:1000;letter-spacing:-.055em;color:#fff5d8;text-shadow:6px 6px 0 #f66328,12px 13px 0 #512b8b,16px 19px 20px #000; }
+#center h2 { margin:15px 0;font-size:clamp(20px,3vw,42px);font-weight:1000;color:#bbff53;text-shadow:3px 3px #000; }
+#center .plate { padding:8px 16px;background:#141125d9;display:inline-block;border:2px dashed #ffffff55; transform:rotate(2deg);font-weight:800;letter-spacing:.05em; }
+#clock { position:absolute;right:17px;top:76px;z-index:22;background:#150b20ed;border:2px solid #f69c42;padding:8px 13px;font:900 20px ui-monospace,monospace;box-shadow:6px 6px #000b; }
+#info { position:absolute;bottom:0;left:0;right:0;background:#12101feb;border-top:4px solid var(--acid);min-height:73px;display:flex;gap:20px;align-items:center;padding:12px 18px;z-index:80; }
+#info .status { background:#b2ff27;color:#141414;font-weight:1000;padding:10px 14px;transform:rotate(-2deg);font-size:clamp(14px,1.6vw,19px);white-space:nowrap; }
+#stationText { font-size:clamp(15px,2.3vw,27px);font-weight:1000;text-shadow:2px 2px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+#controls { margin-left:auto;text-align:right;white-space:nowrap;font-size:12px;opacity:.72;line-height:1.45; }
+.particle,.photo,.notice,.ticket,.giant { position:absolute; z-index:15;pointer-events:none;will-change:transform,opacity; }
+.particle {font-size:clamp(15px,3vw,49px);font-weight:1000;letter-spacing:-.04em;white-space:nowrap;-webkit-text-stroke:1px #0008;text-shadow:4px 5px #000,0 0 15px #000;animation:arrival .25s both,wobble 1.6s ease-in-out infinite alternate;}
+.photo { background:#efe9de;border:8px solid #fff4e8;border-bottom-width:26px;box-shadow:12px 16px 0 #000a,0 0 40px #0009; animation:arrival .35s both, photoDance 2s ease-in-out infinite alternate; }
+.photo img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.45) contrast(1.1);}
+.photo .imageCaption{position:absolute;bottom:-22px;left:0;right:0;color:#1e1325;font:900 12px ui-monospace,monospace;text-align:center;overflow:hidden;white-space:nowrap;}
+.notice {max-width:min(400px,86vw);background:#171225;border:4px solid var(--acid);color:#fff;box-shadow:10px 10px #000c; padding:14px 18px;animation:arrival .3s ease-out both,noticetilt 1s ease-in-out infinite alternate; }
+.notice .heading {display:block;background:var(--acid);color:#151515;margin:-14px -18px 8px;padding:4px 10px;font-size:12px;font-weight:1000;letter-spacing:.12em;}
+.notice .msg {font-size:clamp(17px,2.4vw,27px);font-weight:1000;line-height:1.1;}
+.ticket{padding:10px 15px;background:#ffe0a3;color:#151119;border-left:7px dashed #4e2760;border-right:7px dashed #4e2760;box-shadow:5px 8px #0008;transform:rotate(4deg);font:900 15px ui-monospace,monospace;min-width:160px;}
+.ticket small {display:block;font-size:11px;opacity:.65;margin-bottom:7px;}
+.giant{font-size:clamp(48px,13vw,180px);font-weight:1000;letter-spacing:-.08em;white-space:nowrap;color:#fff;text-shadow:6px 6px #ff5729,12px 12px #000;transform:translate(-50%,-50%) rotate(-10deg);z-index:37;}
+#pulse {position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:91;}
+#footerMark {position:fixed;bottom:86px;right:15px;z-index:39;color:#fff9;font:800 11px ui-monospace,monospace;background:#09080bc9;padding:6px 9px;}
+@keyframes arrival {from{opacity:0;scale:.2}to{opacity:1;scale:1}}
+@keyframes wobble {from{translate:-5px 0;rotate:-7deg}to{translate:7px -10px;rotate:7deg}}
+@keyframes photoDance{from{translate:-7px 3px;rotate:-6deg}to{translate:8px -7px;rotate:6deg}}
+@keyframes noticetilt{from{rotate:-3deg}to{rotate:3deg}}
+@media (max-width:600px){#controls{display:none} #ribbonTag{font-size:12px;padding:20px 8px} #info{min-height:66px} #center .plate{font-size:11px}}
+@media (prefers-reduced-motion:reduce){.particle,.photo,.notice{animation:arrival .3s both}#pulse{display:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+ <div id="grid"></div>
+ <div id="center"><div class="eyebrow">SERVEI ABSOLUTAMENT FICTICI</div><h1>RODALIES<br>CHAOS</h1><h2>2.0 — RETARD INDEFINIT</h2><div class="plate">PROPER TREN: ERROR 404</div></div>
+ <div id="clock">00:00:00</div>
+ <div id="ribbon"><div id="ribbonTag">🚆 RODALIES?</div><div id="ticker">NO HI HA TRENS · PERDONIN LES MOLÈSTIES · PROPER TREN: POT SER DEMÀ ·</div></div>
+ <div id="info"><div class="status">R?? <span id="delay">+999'</span></div><div id="stationText">Propera parada: Sants (potser)</div><div id="controls">ALT+F4: tancar<br>F: pantalla completa · ESPAI: més caos</div></div>
+ <div id="footerMark">PARÒDIA · CAP INFORMACIÓ DE SERVEI REAL</div>
+</div>
+<div id="pulse"></div>
+<script>
+'use strict';
+// Rodalies Chaos 2: intentionally goofy, not a live transport information source.
+// All effects are temporary and have hard DOM limits to prevent memory leaks.
+const STATIONS = [
+ 'Barcelona-Sants','Barcelona-Plaça de Catalunya','Barcelona-Arc de Triomf',
+ 'Barcelona-El Clot','Barcelona-Estació de França','Barcelona-La Sagrera-Meridiana',
+ 'L’Hospitalet de Llobregat','Aeroport','El Prat de Llobregat','Viladecans',
+ 'Castelldefels','Sitges','Vilanova i la Geltrú','Cunit','Calafell',
+ 'Sant Vicenç de Calders','Vilafranca del Penedès','Martorell Central',
+ 'Cerdanyola del Vallès','Sabadell Centre','Terrassa Estació del Nord',
+ 'Montcada Bifurcació','Granollers Centre','Cardedeu','Llinars del Vallès',
+ 'Sant Celoni','Hostalric','Maçanet-Massanes','Mataró','Arenys de Mar',
+ 'Calella','Pineda de Mar','Santa Susanna','Malgrat de Mar','Blanes',
+ 'Tordera','Sils','Girona','Flaçà','Figueres','Portbou','Vic',
+ 'Ripoll','Ribes de Freser','Planoles','La Molina','Puigcerdà',
+ 'Manresa','La Garriga','Canovelles','Mollet Sant Fost',
+ 'Palafolls (manifestació del desig)','La Luna','La Sagrera del multivers'
+];
+const PHRASES = [
+ 'TREN SUPRIMIT', 'RETARD INDEFINIT', 'INCIDÈNCIA TÈCNICA',
+ 'DISCULPIN LES MOLÈSTIES', 'EL TREN NO PASSARÀ', 'RODALIES MOMENT™',
+ 'SERVEI INTERROMPUT', 'PRÒXIMA PARADA: ???', 'CANVI DE VIA',
+ 'ERROR 404: TREN NO TROBAT', 'TREN EN EL BACKROOMS',
+ 'ALTERNATIVA: CAMINAR', 'HI HA UN TREN? 🔎', 'EL MAQUINISTA ÉS EN UN ALTRE SERVIDOR',
+ '+999 MINUTS', 'PROPER TREN: MAI', 'ESPERIN INDICACIONS',
+ 'EN RUTA CAP A NARNIA', 'EL TREN HA FET ALT+F4', 'BUFFERING... 🚆',
+ 'LA R1 S’HA ANAT DE VACANCES', 'R2: REALITAT ALTERNATIVA',
+ 'NO TENIM CAP INFORMACIÓ', 'TRENS EN MANTENIMENT EMOCIONAL',
+ 'INFORMACIÓ EN DIRECTE: NO', 'DISCULPES EN BUcle',
+ 'LÍNIA DESCONEGUDA', 'RETARD PREMIUM', 'EN QUINA VIA?',
+ 'VA MÉS DE PRESSA UN CARGOL', 'ARRIBADA ESTIMADA: LOL'
+];
+const ALERTS = [
+ 'El tren de les 08:00 arribarà ahir',
+ 'El servei funciona perfectament (font: ningú)',
+ 'La incidència ha patit una incidència',
+ 'Nova connexió directa: Sants → Nàrnia',
+ 'Proper tren cancel·lat per excés de puntualitat',
+ 'Canvi de via: de la 3 a la dimensió 7',
+ 'El sistema de megafonia ha deixat el grup',
+ 'Per motius tècnics, ara anirem en bicicleta',
+ 'Disculpin les molèsties de disculpar les molèsties',
+ 'La R1 és ara una experiència espiritual',
+ 'No es pot calcular l’hora d’arribada',
+ 'Un tren ha estat vist. Investigació oberta',
+ 'Retard de 4 dies, 3 hores i un segle',
+ 'El destí final s’ha perdut a Producció',
+ 'Rodalies.exe ha deixat de respondre'
+];
+// Photos are optional; if a host denies hotlinking, built-in train illustrations take over.
+const PHOTO_URLS = [
+ 'https://upload.wikimedia.org/wikipedia/commons/7/79/Rodalies_tren_malgrat_de_mar_RENFE_Class_447.JPG',
+ 'https://upload.wikimedia.org/wikipedia/commons/0/03/Rodalies_CAT_2010-06-09_21-46-36.jpg',
+ 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Rodalies_de_Catalunya_logo.svg/512px-Rodalies_de_Catalunya_logo.svg.png',
+ 'https://www.nic.funet.fi/index/railways/Spain/cercanias/es-rodalies-447-barcelonasants-081118-full.jpg',
+ 'https://www.trenvista.net/wp-content/uploads/2021/08/Unidad-447-de-Renfe-con-los-colores-de-Rodalies-de-Catalunya.jpg',
+ 'https://www.viaempresa.cat/uploads/s1/26/49/21/24/rodalies-catalunya.jpeg',
+ 'https://www.newtral.es/wp-content/uploads/2023/08/2220272041-FF-TREN-RODALIES-shutterstock-scaled.jpg',
+ 'https://www.rodalies.gencat.cat/web/.content/01_Actualitat/2026/05_08_Abonaments_2026/BANNER_CAST.png_223078711.png'
+];
+const stage = document.getElementById('stage');
+const ticker = document.getElementById('ticker');
+const stationText = document.getElementById('stationText');
+const clock = document.getElementById('clock');
+const delay = document.getElementById('delay');
+const pulse = document.getElementById('pulse');
+const loadedPhotos = [];
+let boost = false, stationIndex = 0, lastTick = performance.now();
+let tickerX = window.innerWidth;
+const $random = (a,b)=>Math.random()*(b-a)+a;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const tint = () => `hsl(${$random(0,360).toFixed(0)} 98% 66%)`;
+function bound(num,min,max){return Math.min(max,Math.max(min,num));}
+function addTemporary(el,group,max,lifespan){
+ el.dataset.group=group;
+ stage.appendChild(el);
+ const list=stage.querySelectorAll(`[data-group="${group}"]`);
+ if(list.length>max)list[0].remove();
+ window.setTimeout(()=>{if(el.isConnected){el.style.transition='opacity .5s,scale .5s';el.style.opacity='0';el.style.scale='.3';window.setTimeout(()=>el.remove(),550)}},lifespan);
 }
-
-Write-Host ''
-Write-Host '===============================================' -ForegroundColor Magenta
-Write-Host '     RODALIES CHAOS 2.0 / WINDOWS' -ForegroundColor Cyan
-Write-Host '===============================================' -ForegroundColor Magenta
-
-try {
-    if ($PSVersionTable.PSEdition -eq 'Desktop') {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-    }
-    $browser = Find-ChromiumBrowser
-    if (-not $browser) {
-        throw 'No se ha encontrado Microsoft Edge o Google Chrome. Instala uno para usar la ventana sin bordes.'
-    }
-    New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-    Write-Host '[1/3] Descargando el HTML...' -ForegroundColor Yellow
-    Invoke-WebRequest -Uri $source -OutFile $htmlFile -UseBasicParsing -TimeoutSec 30
-    if ((Get-Item -LiteralPath $htmlFile).Length -lt 200) {
-        throw 'El archivo descargado esta vacio o no parece un HTML valido.'
-    }
-    $header = Get-Content -LiteralPath $htmlFile -TotalCount 1
-    if ($header -notmatch '<!DOCTYPE html|<html') {
-        throw 'GitHub no ha devuelto una pagina HTML valida.'
-    }
-    # Unique profile forces a NEW Chromium process even if the normal browser is already open.
-    $profileDir = Join-Path $workDir ('profile-' + [Guid]::NewGuid().ToString('N'))
-    New-Item -ItemType Directory -Path $profileDir -Force | Out-Null
-    $fileUri = ([System.Uri]::new([IO.Path]::GetFullPath($htmlFile))).AbsoluteUri
-    Write-Host "[2/3] Navegador: $browser" -ForegroundColor Cyan
-    $arguments = @(
-        "--user-data-dir=`"$profileDir`""
-        "--app=`"$fileUri`""
-        '--start-fullscreen'
-        '--new-window'
-        '--no-first-run'
-        '--no-default-browser-check'
-        '--disable-extensions'
-    )
-    Write-Host '[3/3] Abriendo una ventana independiente...' -ForegroundColor Green
-    Start-Process -FilePath $browser -ArgumentList ($arguments -join ' ') | Out-Null
-    Write-Host 'Rodalies activado. Cierra con Alt+F4. Pulsa F si necesitas forzar fullscreen.' -ForegroundColor Magenta
-} catch {
-    Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
-    throw
+function stamp(el){
+ el.style.left=`${$random(2,Math.max(3,innerWidth-230))}px`;
+ el.style.top=`${$random(82,Math.max(83,innerHeight-175))}px`;
 }
+function createText(){
+ const el=document.createElement('div');el.className='particle';
+ el.textContent=pick(PHRASES);el.style.color=tint();
+ el.style.fontSize=`${$random(20,boost?100:74).toFixed(0)}px`;
+ stamp(el);addTemporary(el,'text',boost?30:20,$random(2200,5200));
+}
+function trainSvg(index){
+ const colors=['#ff8034','#a576f3','#e44976','#99e433','#ffce66','#66c9e7'];
+ const c=colors[index%colors.length], num=String(447+index*3), destination=pick(STATIONS).replace(/[&<>]/g,'');
+ const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360">
+ <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#15101e"/><stop offset="1" stop-color="#403150"/></linearGradient></defs>
+ <rect width="600" height="360" fill="url(#sky)"/>
+ <path d="M0 282H600M0 300H600M0 324H600" stroke="#aaa" stroke-width="5"/>
+ <path d="M55 280L65 95Q70 65 115 60H505Q535 65 540 98L545 280Z" fill="#f3ede7" stroke="#211b28" stroke-width="12"/>
+ <path d="M60 117H540V195H60Z" fill="#1a273f"/><path d="M60 207H540V259H60Z" fill="${c}"/>
+ <path d="M109 119V190M192 119V190M278 119V190M362 119V190M445 119V190" stroke="#ddd" stroke-width="9"/>
+ <circle cx="118" cy="260" r="20" fill="#f8d69c"/><circle cx="480" cy="260" r="20" fill="#f8d69c"/>
+ <rect x="194" y="69" width="214" height="32" rx="4" fill="#17131f"/><text x="300" y="93" font-size="21" fill="#f9df65" font-family="monospace" text-anchor="middle">${num} · RETARD</text>
+ <text x="300" y="241" font-family="Arial" font-weight="900" font-size="46" text-anchor="middle" fill="#fff">R 🚆</text>
+ <rect x="18" y="10" width="564" height="35" rx="5" fill="#ffce48"/><text x="300" y="35" font-family="monospace" font-size="18" font-weight="bold" text-anchor="middle" fill="#130c21">RODALIES.EXE • ERROR 404</text>
+ </svg>`;
+ return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+const trainArt=Array.from({length:12},(_,i)=>trainSvg(i));
+function preloadPhotos(){
+ PHOTO_URLS.forEach(url=>{
+  const img=new Image();
+  img.onload=()=>loadedPhotos.push(url);
+  img.onerror=()=>{};
+  img.src=url;
+ });
+}
+function createPhoto(){
+ const frame=document.createElement('div');frame.className='photo';
+ const width=$random(130,boost?440:330);
+ frame.style.width=`${width}px`;frame.style.height=`${width*$random(.57,.82)}px`;
+ const img=document.createElement('img');
+ img.alt='Tren o mem ferroviari';
+ const usePhoto=loadedPhotos.length>0&&Math.random()<.6;
+ img.src=usePhoto?pick(loadedPhotos):pick(trainArt);
+ img.onerror=()=>{img.onerror=null;img.src=pick(trainArt)};
+ const cap=document.createElement('div');cap.className='imageCaption';cap.textContent=pick(['QUE HI HA DE LA R1?', 'AVISTAMENT DE TREN', 'LA MÀQUINA DEL TEMPS', 'SITUACIÓ CONTROLADA (?)','RENFE MOMENT']);
+ frame.append(img,cap);stamp(frame);
+ addTemporary(frame,'photos',boost?19:13,$random(3300,6500));
+}
+function createNotice(){
+ const el=document.createElement('div');el.className='notice';
+ const head=document.createElement('span');head.className='heading';head.textContent='⚠ AVÍS FICTICI · NO OFICIAL';
+ const msg=document.createElement('div');msg.className='msg';msg.textContent=pick(ALERTS);
+ el.append(head,msg);stamp(el);addTemporary(el,'notice',boost?5:3,$random(3200,6100));
+}
+function createTicket(){
+ const el=document.createElement('div');el.className='ticket';
+ const small=document.createElement('small');small.textContent='BILLET DE NOMÉS ANADA';
+ const body=document.createElement('div');body.textContent=`R${Math.floor($random(0,999))} → ${pick(['NÀRNIA','LA LLUNA','BLANES','ERROR','EL NO-RES'])}`;
+ const foot=document.createElement('small');foot.textContent=`PREU: ${pick(['3 RETARDS','LA TEVA PACIÈNCIA','999 €','UN SOMNI'])}`;
+ el.append(small,body,foot);stamp(el);addTemporary(el,'ticket',5,6400);
+}
+function createGiant(){
+ const el=document.createElement('div');el.className='giant';el.textContent=pick(['NO HI HA TREN','+999 MIN','CANCEL·LAT','R1 RIP','🚆 ???']);
+ el.style.left='50%';el.style.top='49%';
+ addTemporary(el,'giant',2,1400);
+}
+function updatePanel(){
+ const stop=STATIONS[stationIndex++%STATIONS.length];
+ stationText.textContent=pick([`PROPERA PARADA: ${stop}`,`DESTINACIÓ DESCONEGUDA · ${stop}`,`ATENCIÓ: ${stop}`,`CANVI DE VIA A ${stop}`]);
+ delay.textContent=`+${Math.floor($random(15,999))}'`;
+}
+function updateClock(){clock.textContent=new Date().toLocaleTimeString('ca-ES',{hour12:false});}
+function animateTicker(t){
+ const dt=Math.min(55,t-lastTick);lastTick=t;
+ tickerX-=dt*(boost?.30:.17);
+ const textWidth=ticker.getBoundingClientRect().width;
+ if(tickerX < -textWidth) tickerX=window.innerWidth;
+ ticker.style.transform=`translate3d(${tickerX}px,0,0)`;
+ requestAnimationFrame(animateTicker);
+}
+function blinkMild(){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ pulse.animate([{opacity:0},{opacity:.16},{opacity:0}],{duration:400,easing:'ease-out'});
+}
+function tickChaos(){
+ createText();
+ if(Math.random() < (boost?.82:.5)) createPhoto();
+ if(Math.random() < (boost?.2:.07)) createNotice();
+ if(Math.random() < .028) createTicket();
+ if(Math.random() < (boost?.1:.025)) createGiant();
+}
+window.addEventListener('keydown',async(e)=>{
+ if(e.code==='Space'){e.preventDefault();boost=!boost;document.querySelector('#center h2').textContent=boost?'MODO TURBO · +9999 MIN':'2.0 — RETARD INDEFINIT';}
+ if(e.key.toLowerCase()==='f'){
+  try{if(!document.fullscreenElement)await document.documentElement.requestFullscreen();else await document.exitFullscreen();}catch(err){console.log('Pantalla completa no disponible',err)}
+ }
+});
+window.addEventListener('resize',()=>{tickerX=innerWidth});
+preloadPhotos();updatePanel();updateClock();requestAnimationFrame(animateTicker);
+setInterval(tickChaos,390);
+setInterval(updatePanel,4200);
+setInterval(updateClock,1000);
+setInterval(blinkMild,12000);
+setInterval(()=>{if(Math.random()<.44)createTicket();},5900);
+// Never captures the keyboard globally; browser window only. Alt+F4 closes normally.
+</script>
+</body>
+</html>
